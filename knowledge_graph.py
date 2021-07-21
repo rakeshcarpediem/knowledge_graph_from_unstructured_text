@@ -28,28 +28,24 @@ class StanfordNER:
         self.stanford_ner_tagger = nltk.tag.StanfordNERTagger(loc+'/classifiers/english.all.3class.distsim.crf.ser.gz',
         loc+'/stanford-ner.jar')
 
-    def ner(self,doc):
-        sentences = nltk.sent_tokenize(doc)
-        result = []
-        for sent in sentences:
-            words = nltk.word_tokenize(sent)
-            tagged = self.stanford_ner_tagger.tag(words)
-            result.append(tagged)
-        return result
-
     def display(self,ner):
         print(ner)
         print("\n")
 
+    def ner(self,doc):    
+        nlp = en_core_web_sm.load()
+        doc = nlp(doc)
+        return [(X.text, X.label_) for X in doc.ents]
+    
     def ner_to_dict(self,ner):
         """
-        Expects ner of the form list of tuples
+        Expects ner of the form list of tuples 
         """
         ner_dict = {}
         for tup in ner:
             ner_dict[tup[0]] = tup[1]
         return ner_dict
-
+    
 class CoreferenceResolver:
     def generate_coreferences(self,doc,stanford_core_nlp_path,verbose):
         '''
