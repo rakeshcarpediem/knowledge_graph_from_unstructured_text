@@ -10,6 +10,7 @@ from spacy import displacy
 from collections import Counter
 import en_core_web_sm
 from pprint import pprint
+import pandas as pd
 # For custom ER:
 import tkinter
 import re
@@ -21,12 +22,9 @@ class StanfordNER:
     def __init__(self):
         self.get_stanford_ner_location()
 
-    def get_stanford_ner_location(self):
-        print("Provide (relative/absolute) path to stanford ner package.\n Press carriage return to use './stanford-ner-2018-10-16' as path:") 
-        loc = input()
-        print("... Running stanford for NER; this may take some time ...")
-        if(loc == ''):
-            loc = "./stanford-ner-2018-10-16"
+    def get_stanford_ner_location(self):  
+        loc = "/content/knowledge_graph_from_unstructured_text/stanford-ner-2018-10-16"
+        print("... Running stanford for NER; this may take some time ...")        
         self.stanford_ner_tagger = nltk.tag.StanfordNERTagger(loc+'/classifiers/english.all.3class.distsim.crf.ser.gz',
         loc+'/stanford-ner.jar')
 
@@ -42,58 +40,15 @@ class StanfordNER:
     def display(self,ner):
         print(ner)
         print("\n")
-    
-class SpacyNER:
-    def ner(self,doc):    
-        nlp = en_core_web_sm.load()
-        doc = nlp(doc)
-        return [(X.text, X.label_) for X in doc.ents]
-    
+
     def ner_to_dict(self,ner):
         """
-        Expects ner of the form list of tuples 
+        Expects ner of the form list of tuples
         """
         ner_dict = {}
         for tup in ner:
             ner_dict[tup[0]] = tup[1]
         return ner_dict
-    
-    def display(self,ner):
-        print(ner)
-        print("\n")
-
-class NltkNER:
-    def ner(self,doc):
-        pos_tagged = self.assign_pos_tags(doc)
-        #chunks = self.split_into_chunks(pos_tagged)
-        result = []
-        for sent in pos_tagged:
-            result.append(nltk.ne_chunk(sent))
-        return result
-
-    def assign_pos_tags(self,doc):
-        sentences = nltk.sent_tokenize(doc)
-        words = [nltk.word_tokenize(sent) for sent in sentences]
-        pos_tagged = [nltk.pos_tag(word) for word in words]
-        return pos_tagged
-    
-    def split_into_chunks(self,sentences):
-        # This rule says that an NP chunk should be formed whenever the chunker finds an optional determiner (DT) or possessive pronoun (PRP$) followed by any number of adjectives (JJ/JJR/JJS) and then any number of nouns (NN/NNS/NNP/NNPS) {dictator/NN Kim/NNP Jong/NNP Un/NNP}. Using this grammar, we create a chunk parser.
-        grammar = "NP: {<DT|PRP\$>?<JJ.*>*<NN.*>+}"
-        cp = nltk.RegexpParser(grammar)
-        chunks = []
-        for sent in sentences:
-            chunks.append(cp.parse(sent))
-        return chunks
-
-    def display(self,ner):
-        print("\n\nTagged: \n\n")
-        pprint(ner)
-        print("\n\nTree: \n\n ")
-        for leaves in ner:
-            print(leaves)
-            #leaves.draw()
-        print("\n")
 
 class CoreferenceResolver:
     def generate_coreferences(self,doc,stanford_core_nlp_path,verbose):
@@ -105,7 +60,7 @@ class CoreferenceResolver:
         nlp = StanfordCoreNLP(stanford_core_nlp_path, quiet =  not verbose)
         props = {'annotators': 'coref', 'pipelineLanguage': 'en'}
         annotated = nlp.annotate(doc, properties=props)
-        print("\nannotated\n\n",annotated,"\n\n")
+        print("\nannotated\n\n", annotated, "\n\n")
         result = json.loads(annotated)
         # Dump coreferences to a file
         pickle.dump(result,open( "coref_res.pickle", "wb" ))
@@ -218,25 +173,17 @@ def resolve_coreferences(doc,stanford_core_nlp_path,ner,verbose):
     return result
 
 def main():
-    if len(sys.argv) == 1:
-        print("Usage:   python3 knowledge_graph.py <nltk/stanford/spacy> [optimized,verbose,nltk,stanford,spacy]")
-        return None
 
-    verbose = False
-    execute_coref_resol = False
-    output_path = "./data/output/"
+    output_path = "/content/knowledge_graph_from_unstructured_text/data/output/"
     ner_pickles_op = output_path + "ner/"
     coref_cache_path = output_path + "caches/"
     coref_resolved_op = output_path + "kg/"
     
-    stanford_core_nlp_path = input("\n\nProvide (relative/absolute) path to stanford core nlp package.\n Press carriage return to use './stanford-corenlp-full-2018-10-05' as path:")
-    if(stanford_core_nlp_path == ''):
-        stanford_core_nlp_path = "./stanford-corenlp-full-2018-10-05"
-
+    stanford_core_nlp_path = "/content/stanford-nlp/stanford-corenlp-4.2.2"
     file_list = []
-    for f in glob.glob('./data/input/*'):
+    for f in glob.glob('/content/knowledge_graph_from_unstructured_text/data/input/*'):
         file_list.append(f)
-
+ 
     for file in file_list:
         with open(file,"r") as f:
             lines = f.read().splitlines()
@@ -245,48 +192,20 @@ def main():
         for line in lines:
             doc += line
 
-        if verbose:
-            print("Read: \n",doc)
 
-        
-        for i in range(1,len(sys.argv)):
-            if(sys.argv[i] == "nltk"):
-                print("\nusing NLTK for NER")
-                nltk_ner = NltkNER()
-                named_entities = nltk_ner.ner(doc)
-                nltk_ner.display(named_entities)
-                # ToDo -- Implement ner_to_dict for nltk_ner
-                spacy_ner = SpacyNER()
-                named_entities = spacy_ner .ner_to_dict(spacy_ner.ner(doc))
-            elif(sys.argv[i]=="stanford"):
-                print("using Stanford for NER (may take a while):  \n\n\n")
-                stanford_ner = StanfordNER()
-                tagged = stanford_ner.ner(doc)
-                ner = stanford_ner.ner(doc)
-                stanford_ner.display(ner)
-                # ToDo -- Implement ner_to_dict for stanford_ner
-                named_entities = spacy_ner.ner_to_dict(spacy_ner.ner(doc))
-            elif(sys.argv[i]=="spacy"):
-                print("\nusing Spacy for NER\n")
-                spacy_ner = SpacyNER()
-                named_entities = spacy_ner.ner(doc)
-                spacy_ner.display(named_entities)
-                named_entities = spacy_ner.ner_to_dict(named_entities)
-            elif(sys.argv[i]=="verbose"):
-                verbose = True
-            elif(sys.argv[i]=="optimized"):
-                execute_coref_resol = True
-        
+        print("using Stanford for NER (may take a while):  \n\n\n")
+        stanford_ner = StanfordNER()
+        tagged = stanford_ner.ner(doc)
+        ner = stanford_ner.ner(doc)
+        stanford_ner.display(ner)
+
+        # ToDo -- Implement ner_to_dict for stanford_ner
+        named_entities = stanford_ner.ner_to_dict(stanford_ner.ner(doc))
+
+
         # Save named entities
-        op_pickle_filename = ner_pickles_op + "named_entity_" + file.split('/')[-1].split('.')[0] + ".pickle"
+        op_pickle_filename = ner_pickles_op + "named_entity_"+file.split('/')[-1].split('.')[0]+".pickle"
         with open(op_pickle_filename,"wb") as f:
             pickle.dump(named_entities, f)
 
-        if(execute_coref_resol):
-            print("\nResolving Coreferences... (This may take a while)\n")
-            doc = resolve_coreferences(doc,stanford_core_nlp_path,named_entities,verbose)
-
-        op_filename = coref_resolved_op + file.split('/')[-1]
-        with open(op_filename,"w+") as f:
-            f.write(doc)
 main()
