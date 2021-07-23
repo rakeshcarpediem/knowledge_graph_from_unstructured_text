@@ -66,7 +66,7 @@ class SpacyNER:
         return ner_dict
     
     def display(self,ner):
-        print(ner)
+        print("NER: ",ner)
         print("\n")
 '''         
 class CoreferenceResolver:
