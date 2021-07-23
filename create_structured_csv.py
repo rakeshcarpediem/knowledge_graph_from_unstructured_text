@@ -48,7 +48,7 @@ def main():
                     triplet.add(_)
         #convert the pandas dataframe into csv
         processed_pd = pd.DataFrame(list(triplet),columns=['Type','Entity 1','Relationship','Type', 'Entity2'])
-        processed_pd.to_csv('./data/result/' + file.split("/")[-1].split(".")[0] + '.csv', encoding='utf-8', index=False)
+        processed_pd.to_csv('/content/knowledge_graph_from_unstructured_text/data/output/result/' + file.split("/")[-1].split(".")[0] + '.csv', encoding='utf-8', index=False)
 
         print("Processed " + file.split("/")[-1])
 
