@@ -41,10 +41,10 @@ class StanfordNER:
             result.append(tagged)
         return result
     #this function doesn't generate required output using spacy ner for now
-  '''  def ner_to_dict(self,ner): 
-        """
-        Expects ner of the form list of tuples 
-        """
+    '''  def ner_to_dict(self,ner): 
+        
+        #Expects ner of the form list of tuples 
+       
         ner_dict = {}
         for tup in ner:
             ner_dict[tup[0]] = tup[1]
@@ -71,11 +71,11 @@ class SpacyNER:
 '''         
 class CoreferenceResolver:
     def generate_coreferences(self,doc,stanford_core_nlp_path,verbose):
-        '''
-        pickles results object to coref_res.pickle
-        the result has the following structure:
-        dict of dict of lists of dicts:  { { [ {} ] } }  -- We are interested in the 'corefs' key { [ { } ] }-- Each list has all coreferences to a given pronoun.
-        '''
+        
+        #pickles results object to coref_res.pickle
+        #the result has the following structure:
+        #dict of dict of lists of dicts:  { { [ {} ] } }  -- We are interested in the 'corefs' key { [ { } ] }-- Each list has all coreferences to a given pronoun.
+        
         nlp = StanfordCoreNLP(stanford_core_nlp_path, quiet =  not verbose)
         props = {'annotators': 'coref', 'pipelineLanguage': 'en'}
         annotated = nlp.annotate(doc, properties=props)
@@ -214,13 +214,14 @@ def main():
 
 
         print("using Stanford for NER (may take a while):  \n\n\n")
-       '''
+        '''
         #using spacy ner because stanford ner_to_dict give incorrect output
         stanford_ner = StanfordNER()
         ner = stanford_ner.ner(doc)
         stanford_ner.display(ner)
         named_entities = stanford_ner.ner_to_dict(ner)
         '''
+        spacy_ner = SpacyNER()
         named_entities = spacy_ner.ner_to_dict(spacy_ner.ner(doc))
 
         # Save named entities
