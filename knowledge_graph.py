@@ -40,6 +40,21 @@ class StanfordNER:
             tagged = self.stanford_ner_tagger.tag(words)
             result.append(tagged)
         return result
+    #this function doesn't generate required output using spacy ner for now
+  '''  def ner_to_dict(self,ner): 
+        """
+        Expects ner of the form list of tuples 
+        """
+        ner_dict = {}
+        for tup in ner:
+            ner_dict[tup[0]] = tup[1]
+        return ner_dict
+    '''
+class SpacyNER:
+    def ner(self,doc):    
+        nlp = en_core_web_sm.load()
+        doc = nlp(doc)
+        return [(X.text, X.label_) for X in doc.ents]
     
     def ner_to_dict(self,ner):
         """
@@ -50,6 +65,10 @@ class StanfordNER:
             ner_dict[tup[0]] = tup[1]
         return ner_dict
     
+    def display(self,ner):
+        print(ner)
+        print("\n")
+'''         
 class CoreferenceResolver:
     def generate_coreferences(self,doc,stanford_core_nlp_path,verbose):
         '''
@@ -171,6 +190,7 @@ def resolve_coreferences(doc,stanford_core_nlp_path,ner,verbose):
     #coref.unpickle()
     result = coref_obj.resolve_coreferences(corefs,doc,ner,verbose)
     return result
+'''
 
 def main():
 
@@ -179,7 +199,7 @@ def main():
     coref_cache_path = output_path + "caches/"
     coref_resolved_op = output_path + "kg/"
     
-    stanford_core_nlp_path = "/content/stanford-nlp/stanford-corenlp-4.2.2"
+    stanford_core_nlp_path = "/content/knowledge_graph_from_unstructured_text/stanford-nlp/stanford-corenlp-4.2.2"
     file_list = []
     for f in glob.glob('/content/knowledge_graph_from_unstructured_text/data/input/*'):
         file_list.append(f)
@@ -194,14 +214,14 @@ def main():
 
 
         print("using Stanford for NER (may take a while):  \n\n\n")
+       '''
+        #using spacy ner because stanford ner_to_dict give incorrect output
         stanford_ner = StanfordNER()
-        tagged = stanford_ner.ner(doc)
         ner = stanford_ner.ner(doc)
         stanford_ner.display(ner)
-
-        # ToDo -- Implement ner_to_dict for stanford_ner
-        named_entities = stanford_ner.ner_to_dict(stanford_ner.ner(doc))
-
+        named_entities = stanford_ner.ner_to_dict(ner)
+        '''
+        named_entities = spacy_ner.ner_to_dict(spacy_ner.ner(doc))
 
         # Save named entities
         op_pickle_filename = ner_pickles_op + "named_entity_"+file.split('/')[-1].split('.')[0]+".pickle"
